@@ -1,0 +1,8 @@
+
+node_modules/
+.env
+.env.local
+.vercel/
+rave/dist/
+server/sever/src/assets/img/*.jpg
+server/sever/src/assets/img/*.png
