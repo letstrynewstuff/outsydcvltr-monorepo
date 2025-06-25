@@ -578,7 +578,7 @@ app.post("/api/events/seed", async (req, res) => {
         date: "August 1st, 2025",
         time: "7:00 PM",
         location: "Victor Uwaifo Creative Hub, Benin City, Airport Road",
-        image: "/img/IMG_9228.PNG",
+        image: "/img/IMG_9588.JPG",
         price: 0,
       },
       {
@@ -587,7 +587,7 @@ app.post("/api/events/seed", async (req, res) => {
         date: "December 2025",
         time: "8:00 PM",
         location: "Victor Uwaifo Creative Hub, Benin City, Airport Road",
-        image: "/img/IMG_7147.PNG",
+        image: "/img/IMG_9589.JPG",
         price: 0,
       },
       {
@@ -596,7 +596,7 @@ app.post("/api/events/seed", async (req, res) => {
         date: "Coming Soon",
         time: "6:30 PM",
         location: "Coming Soon",
-        image: "/img/wassup.jpg",
+        image: "/img/IMG_9590.JPG",
         price: 0,
       },
     ];
