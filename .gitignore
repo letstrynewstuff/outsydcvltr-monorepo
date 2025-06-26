@@ -4,5 +4,3 @@ node_modules/
 .env.local
 .vercel/
 rave/dist/
-server/sever/src/assets/img/*.jpg
-server/sever/src/assets/img/*.png

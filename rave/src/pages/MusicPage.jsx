@@ -141,16 +141,10 @@ const MusicPage = () => {
               🎶 Music Is Our Therapy
             </h2>
             <p className="text-gray-300">
-              At Outsydeville, music isn’t just what we listen to — it’s how we
-              breathe, feel, and survive. It’s the sound of Lagos nights, Benin
-              City streets, PH cruise, and Abuja chills. It’s that beat drop
-              that lifts your spirit when life tries to pin you down.
+              
             </p>
             <p className="text-gray-300 mt-4">
-              In a world that’s heavy with expectations, school pressure, hustle
-              stress, and online noise, music is our escape route. And when you
-              add the right drink, real friends, and a full dancefloor? You’re
-              healing without even knowing it.
+              
             </p>
           </div>
         </div>
@@ -176,14 +170,10 @@ const MusicPage = () => {
               🔊 We Believe in the Power of Sound
             </h2>
             <p className="text-gray-300">
-              Whether it’s Shallipopi’s coded lamba, Rema’s cosmic Afro-rave, or
-              Amapiano log drums shaking the club walls, our music moves with
-              the pulse of Naija Gen Z — raw, joyful, rebellious, and real.
+            
             </p>
             <ul className="text-gray-300 mt-4 space-y-2">
-              <li>🥁 Afrobeats to Amapiano</li>
-              <li>🎤 Street-pop to Soulful ballads</li>
-              <li>💿 Old-school Highlife to Gen Z bangers</li>
+              
             </ul>
           </div>
         </div>
@@ -504,18 +494,13 @@ const MusicPage = () => {
               💃🏽 The Culture Is Loud
             </h2>
             <p className="text-gray-300">
-              Music is how we link identity with joy. It’s how we remember where
-              we’re from — and rewrite where we’re going. It’s the thing that
-              brings strangers together in a club, a street corner, or an
-              Outsydeville stage.
+            
             </p>
             <h3 className="text-2xl font-semibold mt-6">
-              🥂 Press Play on Freedom
+              
             </h3>
             <p className="text-gray-300 mt-2">
-              So yeah. You deserve to blow off steam. To dance. To connect. To
-              raise a glass and scream your favorite chorus at 2 a.m. Because
-              this life is one, and you owe it to yourself to live it loud.
+              
             </p>
           </div>
         </div>

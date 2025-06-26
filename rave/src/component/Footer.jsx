@@ -125,7 +125,7 @@ const Footer = () => {
 
         {/* Copyright */}
         <div className="text-xs sm:text-sm text-white/80 mt-4">
-          © 2025 Outsydeville Culture
+          © 2025 OUTSYDCVLTR 
         </div>
       </div>
     </footer>

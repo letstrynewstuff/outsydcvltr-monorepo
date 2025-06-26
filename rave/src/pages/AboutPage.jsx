@@ -105,7 +105,7 @@ const AboutPage = () => {
         </video>
         <div className="relative px-4 backdrop-blur-sm bg-[#0a0d16]/30 py-8 rounded-lg z-10">
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
-            About <span className="text-[#38b2c8]">Outsydeville</span>
+            About <span className="text-[#38b2c8]">OUTSYDCVLTR</span>
           </h1>
           <p className="text-xl text-gray-300 mb-6 max-w-2xl mx-auto">
             Gen Z to the World. Through Music. Through Joy. Through Culture.
@@ -122,7 +122,7 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* About Outsydeville Section */}
+      {/* About OUTSYDCVLTR Section */}
       <section
         id="about"
         className="relative py-16 bg-[#161a2c]/30 backdrop-blur-md z-10"
@@ -147,22 +147,17 @@ const AboutPage = () => {
               celebrating creativity, diversity, and collaboration through
               curated cultural experiences. We design intentional spaces — from
               live events to immersive parties — where individuals can connect,
-              unwind, and express themselves freely. At our core, we believe in
-              the power of shared moments to foster meaningful connections,
-              promote positive energy, and shape the future of youth culture
-              worldwide.
+              unwind, and express themselves freely. 
+          
             </p>
             <p className="text-gray-300 mt-4">
-              In a world full of pressure, deadlines, and digital noise, we
-              believe in blowing off steam the right way: <br />
-              🎶 Loud music. 🤝 Real friends. 💃🏾 Unapologetic vibes. 🍹 Your
-              favorite drink in hand.
+            
             </p>
           </div>
         </div>
       </section>
 
-      {/* Why We Exist Section */}
+      {/* Our Core */}
       <section className="relative py-16 bg-[#161a2c]/30 backdrop-blur-md z-10">
         <div className="container mx-auto px-4 flex flex-col md:flex-row-reverse items-center">
           <div className="w-full md:w-1/2 mb-6 md:mb-0">
@@ -176,10 +171,10 @@ const AboutPage = () => {
             />
           </div>
           <div className="w-full md:w-1/2 md:pr-8 text-white">
-            <h2 className="text-3xl font-semibold mb-4">Why We Exist</h2>
+            <h2 className="text-3xl font-semibold mb-4">Our Core</h2>
             <p className="text-gray-300">
-              Outsydeville was born from a simple truth: We all need an escape.
-              And sometimes, the best therapy is on the dance floor.
+              We believe in the power of shared momennts to foster meaninngful connections,
+              ad shape the future of the youth culture worldwide.
             </p>
             <p className="text-gray-300 mt-4">
               Through parties, festivals, and creative culture experiences, we
@@ -231,7 +226,9 @@ const AboutPage = () => {
                   animation: bounce 1s infinite;
                 }
                 @keyframes pulse {
-                  0%, 100% { opacity: 1; }
+                  0%, 100% { opacity: n a world full of pressure, deadlines, and digital noise, we
+              believe in blowing off steam the right way: <br />
+              🎶 Loud music. 🤝 Real f1; }
                   50% { opacity: 0.5; }
                 }
                 @keyframes bounce {
@@ -426,16 +423,12 @@ const AboutPage = () => {
           <div className="w-full md:w-1/2 md:pl-8 text-white">
             <h2 className="text-3xl font-semibold mb-4">More Than Vibes</h2>
             <p className="text-gray-300">
-              This isn’t just party culture. It’s people-first culture. It’s
+               It’s people-first culture. It’s
               finding your tribe, letting go of the stress, and celebrating
               every version of yourself — with sound, style, and soul.
             </p>
-            <h3 className="text-2xl font-semibold mt-6">The Vision?</h3>
-            <p className="text-gray-300 mt-2">
-              A world where every Gen Z knows that their voice, story, and vibe
-              matter. Where every city has an Outsydeville moment. Where joy
-              isn’t just a weekend thing — it’s a lifestyle.
-            </p>
+            
+           
           </div>
         </div>
       </section>

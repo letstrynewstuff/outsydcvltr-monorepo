@@ -22,8 +22,8 @@ export const events = [
     name: "Wassup Benin",
     date: "December, 2025",
     time: "8:00 PM",
-    location: "Victor Uwaifo Creative Hub, Benin City, Airport road",
-    image: Img2,
+    location: "Coming soonn",
+    image: Img3,
     tickets: [
       { type: "General Admission", price: 3000, disabled: true },
       { type: "VIP", price: 7000, disabled: true },
@@ -31,18 +31,18 @@ export const events = [
     ],
     // Popup Logic: When "Presale" is clicked, show a form with name, email, and optional phone. On submit, show success popup with emoji (e.g., "🎉") and message "Success! An email will be sent to you with your ticket."
   },
-  {
-    id: 3,
-    name: "Galactic Jazz Session",
-    date: "Cominng Soon",
-    time: "6:30 PM",
-    location: "Coming Soon",
-    image: Img3,
-    tickets: [
-      { type: "General Admission", price: 4000, disabled: true },
-      { type: "VIP", price: 8000, disabled: true },
-      { type: "Presale", price: 2000, limitOne: true, presaleAvailable: true }, // Limit to one per user, popup to be implemented
-    ],
-    // Popup Logic: When "Presale" is clicked, show a form with name, email, and optional phone. On submit, show success popup with emoji (e.g., "🎉") and message "Success! An email will be sent to you with your ticket."
-  },
+  // {
+  //   id: 3,
+  //   name: "Galactic Jazz Session",
+  //   date: "Cominng Soon",
+  //   time: "6:30 PM",
+  //   location: "Coming Soon",
+  //   image: Img3,
+  //   tickets: [
+  //     { type: "General Admission", price: 4000, disabled: true },
+  //     { type: "VIP", price: 8000, disabled: true },
+  //     { type: "Presale", price: 2000, limitOne: true, presaleAvailable: true }, // Limit to one per user, popup to be implemented
+  //   ],
+  //   // Popup Logic: When "Presale" is clicked, show a form with name, email, and optional phone. On submit, show success popup with emoji (e.g., "🎉") and message "Success! An email will be sent to you with your ticket."
+  // },
 ];

@@ -109,8 +109,8 @@ const CulturePage = () => {
             The Heart of <span className="text-[#38b2c8]"> Culture</span>
           </h1>
           <p className="text-xl text-gray-300 mb-6 max-w-2xl mx-auto">
-            Celebrate Benin City’s vibrant heritage. Connect with your roots,
-            dance to the rhythm, and inspire with love and creativity.
+            Rooted in the youth. 
+            
           </p>
           <a
             href="#culture"
@@ -140,22 +140,13 @@ const CulturePage = () => {
           <div className="w-full md:w-1/2 md:pl-8 text-white">
             <h2 className="text-3xl font-semibold mb-4">🎶 A Rhythm of Joy</h2>
             <p className="text-gray-300">
-              From the heart of Benin City to global stages, music has always
-              been a source of joy and cultural pride. It’s more than sound —
-              it’s life, love, and a language that unites us. Artists like
-              Shallipopi and Rema, who started their journeys in Benin, are
-              redefining Afrobeat and street-pop with unique styles rooted in
-              their upbringing. Duncan Mighty brought soulful Port Harcourt
-              rhythms into mainstream consciousness, blending highlife, reggae,
-              and afrobeats into unforgettable hits. Legends like Wizkid and
-              Burna Boy took Naija vibes global, lighting up the world with
-              stories born from our streets and struggles.
+          
             </p>
           </div>
         </div>
       </section>
 
-      {/* The Rise of Amapiano Section */}
+      {/* Unscripted Bonds, Timeless Memories */}
       <section className="relative py-16 bg-[#161a2c]/30 backdrop-blur-md z-10">
         <div className="container mx-auto px-4 flex flex-col md:flex-row-reverse items-center">
           <div className="w-full md:w-1/2 mb-6 md:mb-0">
@@ -170,13 +161,10 @@ const CulturePage = () => {
           </div>
           <div className="w-full md:w-1/2 md:pr-8 text-white">
             <h2 className="text-3xl font-semibold mb-4">
-              🎧 The Rise of Amapiano
+              🎧 Unscripted Bonds,Timeless Memories
             </h2>
             <p className="text-gray-300">
-              The rise of Amapiano has added another energetic beat to Nigeria’s
-              ever-evolving soundscape — parties and clubs across Lagos, Abuja,
-              and PH are vibing non-stop to these South African-inspired log
-              drums and vocal chops, fused seamlessly with Naija flavor.
+              
             </p>
           </div>
         </div>
@@ -200,11 +188,7 @@ const CulturePage = () => {
               🎉 Festivals & Celebrations
             </h2>
             <p className="text-gray-300">
-              Festivals like Flytime Music Festival, Felabration, Detty
-              December, and Homecoming have become cultural staples, drawing
-              thousands together to dance, connect, and celebrate our collective
-              rhythm. At Outsydeville, we don’t just follow trends — we spark
-              them.
+              
             </p>
           </div>
         </div>
@@ -216,9 +200,8 @@ const CulturePage = () => {
           Unleash the Nightlife Vibe
         </h2>
         <p className="max-w-3xl mx-auto mb-6">
-          At Outsydeville, we bring the ultimate party experience—dance the
-          night away, enjoy drinks and good vibes, and let loose in the club
-          scene. Our events are all about fun, freedom, and living it up!
+          At OUTSYDCVLTR, our events are all about fun, freedom, annd livinng it up!
+        
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-4 max-w-6xl mx-auto">
           {[
