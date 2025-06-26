@@ -26,13 +26,11 @@ app.use(
 app.use(express.json());
 app.use("/img", express.static(path.join(__dirname, "src/assets/img")));
 
-// Database
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Email Setup
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -40,7 +38,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.GMAIL_APP_PASSWORD,
   },
 });
-transporter.verify((err, success) => {
+transporter.verify((err) => {
   if (err) console.error("Email transporter error:", err);
   else console.log("Email transporter ready");
 });
@@ -104,7 +102,31 @@ app.post("/api/admin/login", async (req, res) => {
   }
 });
 
-// Create admin (optional: secure or disable in production)
+// Always-available route to set/reset admin password
+app.post("/api/admin/set-password", async (req, res) => {
+  const { username } = req.body;
+  const newPassword = "outsydcvltr12431!!admin";
+
+  if (!username) {
+    return res.status(400).json({ error: "Username is required" });
+  }
+
+  try {
+    const admin = await Admin.findOne({ username });
+    if (!admin) return res.status(404).json({ error: "Admin not found" });
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    admin.password = hashed;
+    await admin.save();
+
+    res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    console.error("Set-password error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Create admin
 app.post("/api/admin/create", async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password)
@@ -122,7 +144,7 @@ app.post("/api/admin/create", async (req, res) => {
   }
 });
 
-// Register for presale + email ticket
+// Presale registration
 app.post("/api/presale/register", async (req, res) => {
   const { name, email, eventId, ticketType } = req.body;
   if (!name || !email || !eventId || !ticketType) {
@@ -130,7 +152,6 @@ app.post("/api/presale/register", async (req, res) => {
   }
 
   try {
-    // Enforce presale cap
     const presaleCount = await Attendee.countDocuments({
       ticketType: "presale",
       eventId,
@@ -169,13 +190,11 @@ app.post("/api/presale/register", async (req, res) => {
     });
     await attendee.save();
 
-    // QR Code
     const qrCodeData = await QRCode.toDataURL(ticketId, {
       errorCorrectionLevel: "H",
       width: 200,
     });
 
-    // Buyer Email
     await transporter.sendMail({
       from: `"Outsydcvltr Events" <${process.env.GMAIL_USER}>`,
       to: email,
@@ -189,7 +208,6 @@ app.post("/api/presale/register", async (req, res) => {
       `,
     });
 
-    // Admin Notification Email
     await transporter.sendMail({
       from: `"Outsydcvltr Events" <${process.env.GMAIL_USER}>`,
       to: "mik5633257@gmail.com",
@@ -213,7 +231,7 @@ app.post("/api/presale/register", async (req, res) => {
   }
 });
 
-// QR Scan route
+// Ticket scan
 app.get("/api/tickets/scan/:ticketId", async (req, res) => {
   const token = req.headers["authorization"]?.split(" ")[1];
   if (!token) return res.status(401).json({ error: "No token provided" });
@@ -248,7 +266,7 @@ app.get("/api/tickets/scan/:ticketId", async (req, res) => {
   }
 });
 
-// Manual search by last 4 of ticketId
+// Manual search
 app.get("/api/tickets/search/:last4", async (req, res) => {
   const token = req.headers["authorization"]?.split(" ")[1];
   if (!token) return res.status(401).json({ error: "No token provided" });
@@ -289,7 +307,7 @@ app.get("/api/events/:id", async (req, res) => {
   }
 });
 
-// Seed
+// Seed events
 app.post("/api/events/seed", async (req, res) => {
   try {
     await Event.deleteMany();
