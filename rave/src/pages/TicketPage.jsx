@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion"
+
 
 const TicketPage = () => {
   const [events, setEvents] = useState([]);
@@ -159,20 +161,37 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
       )}
 
       {successMessage && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md text-center">
-            <h2 className="text-xl font-bold mb-4">Purchase Successful!</h2>
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+          transition={{ duration: 0.3 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        >
+          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md text-center shadow-xl">
+            <h2 className="text-xl font-bold mb-4 text-green-400">
+              Purchase Successful!
+            </h2>
             <p>
-              Thank you, {successMessage.name}, for purchasing a ticket for{" "}
-              {successMessage.eventName}.
+              Thank you, <strong>{successMessage.name}</strong>, for purchasing
+              a ticket for <strong>{successMessage.eventName}</strong>.
             </p>
-            <p>Ticket ID: {successMessage.ticketId}</p>
+            <p className="mt-2">
+              Ticket ID: <strong>{successMessage.ticketId}</strong>
+            </p>
+            <p className="text-green-500 mt-2">
+              QR Code has been sent to <strong>{formData.email}</strong>. Check
+              your inbox.
+              <br />
+              If it was displayed on your screen, kindly take a screenshot as
+              backup.
+            </p>
             {successMessage.qrCode ? (
-              <div className="mt-4 bg-white p-2 inline-block">
+              <div className="mt-4 bg-white p-2 inline-block rounded shadow">
                 <img
                   src={successMessage.qrCode}
                   alt="Ticket QR Code"
-                  className="w-32 h-32"
+                  className="w-32 h-32 mx-auto"
                   onError={(e) => console.error("QR Code image error:", e)}
                 />
               </div>
@@ -181,12 +200,12 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
             )}
             <button
               onClick={() => setSuccessMessage(null)}
-              className="mt-4 bg-white text-[#2a399b] px-4 py-2 rounded-full hover:bg-gray-100 transition"
+              className="mt-6 bg-white text-[#2a399b] px-4 py-2 rounded-full hover:bg-gray-100 transition"
             >
               Close
             </button>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {errorMessage && (

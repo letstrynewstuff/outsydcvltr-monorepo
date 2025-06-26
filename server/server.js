@@ -1,4 +1,4 @@
-
+// server.js
 const express = require("express");
 const mongoose = require("mongoose");
 const nodemailer = require("nodemailer");
@@ -24,15 +24,15 @@ app.use(
   })
 );
 app.use(express.json());
-
-// Serve images from /sever/src/assets/img
 app.use("/img", express.static(path.join(__dirname, "src/assets/img")));
 
+// Database
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
+// Email Setup
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -40,16 +40,12 @@ const transporter = nodemailer.createTransport({
     pass: process.env.GMAIL_APP_PASSWORD,
   },
 });
-
-// Verify email transporter configuration
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("Email transporter error:", error);
-  } else {
-    console.log("Email transporter ready");
-  }
+transporter.verify((err, success) => {
+  if (err) console.error("Email transporter error:", err);
+  else console.log("Email transporter ready");
 });
 
+// Schemas
 const eventSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   name: String,
@@ -84,18 +80,20 @@ const adminSchema = new mongoose.Schema({
 });
 const Admin = mongoose.model("Admin", adminSchema);
 
+// Routes
 app.get("/", (req, res) => res.send("API is running"));
 
+// Admin login
 app.post("/api/admin/login", async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: "Missing username or password" });
-  }
+  if (!username || !password)
+    return res.status(400).json({ error: "Missing credentials" });
+
   try {
     const admin = await Admin.findOne({ username });
-    if (!admin) return res.status(401).json({ error: "Invalid credentials" });
-    const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
+    if (!admin || !(await bcrypt.compare(password, admin.password)))
+      return res.status(401).json({ error: "Invalid credentials" });
+
     const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
@@ -106,30 +104,45 @@ app.post("/api/admin/login", async (req, res) => {
   }
 });
 
+// Create admin (optional: secure or disable in production)
 app.post("/api/admin/create", async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: "Missing username or password" });
-  }
+  if (!username || !password)
+    return res.status(400).json({ error: "Missing fields" });
+
   try {
-    const existingAdmin = await Admin.findOne({ username });
-    if (existingAdmin) return res.status(400).json({ error: "Admin exists" });
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const admin = new Admin({ username, password: hashedPassword });
-    await admin.save();
+    const existing = await Admin.findOne({ username });
+    if (existing) return res.status(400).json({ error: "Admin exists" });
+
+    const hashed = await bcrypt.hash(password, 10);
+    await new Admin({ username, password: hashed }).save();
     res.json({ message: "Admin created" });
   } catch (err) {
-    console.error("Admin creation error:", err.message);
     res.status(500).json({ error: "Server error" });
   }
 });
 
+// Register for presale + email ticket
 app.post("/api/presale/register", async (req, res) => {
   const { name, email, eventId, ticketType } = req.body;
   if (!name || !email || !eventId || !ticketType) {
     return res.status(400).json({ error: "Missing required fields" });
   }
+
   try {
+    // Enforce presale cap
+    const presaleCount = await Attendee.countDocuments({
+      ticketType: "presale",
+      eventId,
+      paymentStatus: "success",
+    });
+
+    if (presaleCount >= 115) {
+      return res.status(403).json({
+        error: "Presale tickets are sold out. You can no longer register.",
+      });
+    }
+
     const event = await Event.findOne({ id: eventId });
     if (!event) return res.status(404).json({ error: "Event not found" });
 
@@ -156,64 +169,38 @@ app.post("/api/presale/register", async (req, res) => {
     });
     await attendee.save();
 
-    // Generate QR code with error handling
-    let qrCodeData;
-    try {
-      qrCodeData = await QRCode.toDataURL(ticketId, {
-        errorCorrectionLevel: "H",
-        width: 200,
-      });
-      console.log(
-        "QR Code generated for ticketId:",
-        ticketId,
-        "Data:",
-        qrCodeData.slice(0, 50)
-      );
-    } catch (qrError) {
-      console.error("QR Code generation error:", qrError.message);
-      return res.status(500).json({ error: "Failed to generate QR code" });
-    }
+    // QR Code
+    const qrCodeData = await QRCode.toDataURL(ticketId, {
+      errorCorrectionLevel: "H",
+      width: 200,
+    });
 
-    // Send email to buyer
-    try {
-      await transporter.sendMail({
-        from: `"Outsydeville Events" <${process.env.GMAIL_USER}>`,
-        to: email,
-        subject: `Your Presale Ticket for ${event.name}`,
-        html: `
-          <h2>Dear ${name},</h2>
-          <p>Your presale ticket for <strong>${event.name}</strong> on ${event.date} at ${event.time}, ${event.location} is confirmed.</p>
-          <p><strong>Ticket ID:</strong> ${ticketId}</p>
-          <p>Scan the QR code below at the event:</p>
-          <img src="${qrCodeData}" alt="Ticket QR Code" style="width:200px;" />
-          <p>Enjoy the event!</p>
-          <p>Outsydeville Team</p>
-        `,
-      });
-      console.log("Buyer email sent to:", email);
-    } catch (emailError) {
-      console.error("Buyer email error:", emailError.message);
-    }
+    // Buyer Email
+    await transporter.sendMail({
+      from: `"Outsydcvltr Events" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: `Your Presale Ticket for ${event.name}`,
+      html: `
+        <h2>Dear ${name},</h2>
+        <p>Your presale ticket for <strong>${event.name}</strong> is confirmed.</p>
+        <p><strong>Ticket ID:</strong> ${ticketId}</p>
+        <p>Scan this QR code at the event:</p>
+        <img src="${qrCodeData}" alt="Ticket QR Code" style="width:200px;" />
+      `,
+    });
 
-    // Send admin notification
-    try {
-      await transporter.sendMail({
-        from: `"Outsydeville Events" <${process.env.GMAIL_USER}>`,
-        to: "mik5633257@gmail.com",
-        subject: `New Presale Ticket for ${event.name}`,
-        html: `
-          <p>New presale ticket registered:</p>
-          <p><strong>Buyer:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Event:</strong> ${event.name}</p>
-          <p><strong>Ticket ID:</strong> ${ticketId}</p>
-          <p><strong>Ticket Type:</strong> ${ticketType}</p>
-        `,
-      });
-      console.log("Admin email sent to: mik5633257@gmail.com");
-    } catch (emailError) {
-      console.error("Admin email error:", emailError.message);
-    }
+    // Admin Notification Email
+    await transporter.sendMail({
+      from: `"Outsydcvltr Events" <${process.env.GMAIL_USER}>`,
+      to: "mik5633257@gmail.com",
+      subject: `New Presale Ticket for ${event.name}`,
+      html: `
+        <p><strong>Buyer:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Ticket ID:</strong> ${ticketId}</p>
+        <p><strong>Ticket Type:</strong> ${ticketType}</p>
+      `,
+    });
 
     res.json({
       message: "Presale ticket registered",
@@ -226,65 +213,83 @@ app.post("/api/presale/register", async (req, res) => {
   }
 });
 
+// QR Scan route
+app.get("/api/tickets/scan/:ticketId", async (req, res) => {
+  const token = req.headers["authorization"]?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "No token provided" });
+
+  try {
+    jwt.verify(token, process.env.JWT_SECRET);
+    const attendee = await Attendee.findOne({
+      ticketId: req.params.ticketId,
+      paymentStatus: "success",
+    });
+    if (!attendee)
+      return res.status(404).json({ error: "Ticket not found or unpaid" });
+
+    const event = await Event.findOne({ id: attendee.eventId });
+
+    res.json({
+      name: attendee.name,
+      email: attendee.email,
+      paymentDate: attendee.paymentDate,
+      ticketType: attendee.ticketType,
+      event: event
+        ? {
+            name: event.name,
+            date: event.date,
+            time: event.time,
+            location: event.location,
+          }
+        : {},
+    });
+  } catch (err) {
+    res.status(401).json({ error: "Invalid token or server error" });
+  }
+});
+
+// Manual search by last 4 of ticketId
+app.get("/api/tickets/search/:last4", async (req, res) => {
+  const token = req.headers["authorization"]?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "No token provided" });
+
+  try {
+    jwt.verify(token, process.env.JWT_SECRET);
+    const last4 = req.params.last4;
+    if (!last4 || last4.length !== 4)
+      return res.status(400).json({ error: "Invalid search term" });
+
+    const matches = await Attendee.find({
+      ticketId: { $regex: `${last4}$`, $options: "i" },
+      paymentStatus: "success",
+    }).select("name email ticketId ticketType");
+
+    res.json(matches);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Events
 app.get("/api/events", async (req, res) => {
   try {
     const events = await Event.find();
     res.json(events);
   } catch (err) {
-    console.error("Events error:", err.message);
     res.status(500).json({ error: "Failed to fetch events" });
   }
 });
-
 app.get("/api/events/:id", async (req, res) => {
   try {
     const event = await Event.findOne({ id: req.params.id });
     if (!event) return res.status(404).json({ error: "Event not found" });
     res.json(event);
   } catch (err) {
-    console.error("Event error:", err.message);
     res.status(500).json({ error: "Failed to fetch event" });
   }
 });
 
-app.get("/api/attendees", async (req, res) => {
-  const token = req.headers["authorization"]?.split(" ")[1];
-  if (!token) return res.status(401).json({ error: "No token provided" });
-  try {
-    jwt.verify(token, process.env.JWT_SECRET);
-    const attendees = await Attendee.find({ paymentStatus: "success" });
-    res.json(attendees);
-  } catch (err) {
-    console.error("Attendees error:", err.message);
-    res.status(401).json({ error: "Invalid token" });
-  }
-});
-
-app.get("/api/tickets/scan/:ticketId", async (req, res) => {
-  const token = req.headers["authorization"]?.split(" ")[1];
-  if (!token) return res.status(401).json({ error: "No token provided" });
-  try {
-    jwt.verify(token, process.env.JWT_SECRET);
-    const attendee = await Attendee.findOne({
-      ticketId: req.params.ticketId,
-      paymentStatus: "success",
-    }).populate("eventId", "name date time location");
-    if (!attendee) {
-      return res.status(404).json({ error: "Ticket not found or unpaid" });
-    }
-    res.json({
-      name: attendee.name,
-      email: attendee.email,
-      paymentDate: attendee.paymentDate,
-      ticketType: attendee.ticketType,
-      event: attendee.eventId,
-    });
-  } catch (err) {
-    console.error("Scan error:", err.message);
-    res.status(401).json({ error: "Invalid token or server error" });
-  }
-});
-
+// Seed
 app.post("/api/events/seed", async (req, res) => {
   try {
     await Event.deleteMany();
@@ -320,7 +325,6 @@ app.post("/api/events/seed", async (req, res) => {
     await Event.insertMany(sampleEvents);
     res.json({ message: "Events seeded successfully" });
   } catch (err) {
-    console.error("Seeding error:", err.message);
     res.status(500).json({ error: "Seeding failed" });
   }
 });
