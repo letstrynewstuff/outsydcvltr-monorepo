@@ -21,6 +21,7 @@ app.use(
       "http://localhost:4173",
       "https://outsydcvltr-monorepo.vercel.app",
       "https://outsydcvltr.com",
+      "https://www.outsydcvltr.com",
     ],
     credentials: true,
   })
