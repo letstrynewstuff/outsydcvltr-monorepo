@@ -1,4 +1,3 @@
-// server.js
 const express = require("express");
 const mongoose = require("mongoose");
 const nodemailer = require("nodemailer");
@@ -8,9 +7,11 @@ const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const QRCode = require("qrcode");
+const axios = require("axios");
 const path = require("path");
 
-dotenv.config();
+require("dotenv").config();
+
 
 const app = express();
 app.use(
@@ -19,6 +20,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:4173",
       "https://outsydcvltr-monorepo.vercel.app",
+      "https://outsydcvltr.com",
     ],
     credentials: true,
   })
@@ -26,10 +28,58 @@ app.use(
 app.use(express.json());
 app.use("/img", express.static(path.join(__dirname, "src/assets/img")));
 
+// mongoose
+//   .connect(process.env.MONGODB_URI, {
+//     useNewUrlParser: true,
+//     useUnifiedTopology: true,
+//   })
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
+
+// Schemas
+const eventSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: String,
+  date: String,
+  time: String,
+  location: String,
+  image: String,
+  price: {
+    generalAdmission: { type: Number, default: 0 },
+    gengOf6: { type: Number, default: 0 },
+    comingSoon: { type: Boolean, default: false },
+  },
+});
+
+const Event = mongoose.model("Event", eventSchema);
+
+const attendeeSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  eventId: String,
+  paymentReference: String,
+  paymentStatus: { type: String, default: "pending" },
+  ticketId: { type: String, unique: true },
+  ticketType: {
+    type: String,
+    enum: ["presale", "regular", "diamond", "generalAdmission", "gengOf6"],
+    default: "regular",
+  },
+  paymentDate: Date,
+  createdAt: { type: Date, default: Date.now },
+  used: { type: Boolean, default: false },
+});
+
+const Attendee = mongoose.model("Attendee", attendeeSchema);
+
+const adminSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+});
+
+const Admin = mongoose.model("Admin", adminSchema);
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -43,40 +93,12 @@ transporter.verify((err) => {
   else console.log("Email transporter ready");
 });
 
-// Schemas
-const eventSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  name: String,
-  date: String,
-  time: String,
-  location: String,
-  image: String,
-  price: Number,
-});
-const Event = mongoose.model("Event", eventSchema);
-
-const attendeeSchema = new mongoose.Schema({
-  name: String,
-  email: String,
-  eventId: String,
-  paymentReference: String,
-  paymentStatus: { type: String, default: "pending" },
-  ticketId: { type: String, unique: true },
-  ticketType: {
-    type: String,
-    enum: ["presale", "regular", "diamond"],
-    default: "regular",
-  },
-  paymentDate: Date,
-  createdAt: { type: Date, default: Date.now },
-});
-const Attendee = mongoose.model("Attendee", attendeeSchema);
-
-const adminSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-});
-const Admin = mongoose.model("Admin", adminSchema);
+// Email validation regex
+const validateEmail = (email) => {
+  const re =
+    /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  return re.test(String(email).toLowerCase());
+};
 
 // Routes
 app.get("/", (req, res) => res.send("API is running"));
@@ -151,82 +173,209 @@ app.post("/api/presale/register", async (req, res) => {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
+  if (!validateEmail(email)) {
+    return res.status(400).json({ error: "Invalid email format" });
+  }
+
   try {
-    const presaleCount = await Attendee.countDocuments({
-      ticketType: "presale",
-      eventId,
-      paymentStatus: "success",
-    });
-
-    if (presaleCount >= 115) {
-      return res.status(403).json({
-        error: "Presale tickets are sold out. You can no longer register.",
-      });
-    }
-
     const event = await Event.findOne({ id: eventId });
     if (!event) return res.status(404).json({ error: "Event not found" });
+
+    const validTicketTypes = ["presale", "generalAdmission", "gengOf6"];
+    if (!validTicketTypes.includes(ticketType)) {
+      return res.status(400).json({ error: "Invalid ticket type" });
+    }
+
+    let ticketPrice = 0;
+    if (event.name === "OUTSYDCVLTR & FRIENDS All White Edition") {
+      if (event.price.comingSoon) {
+        return res.status(403).json({ error: "Tickets not available yet" });
+      }
+      if (ticketType === "generalAdmission") {
+        ticketPrice = event.price.generalAdmission;
+      } else if (ticketType === "gengOf6") {
+        ticketPrice = event.price.gengOf6;
+      }
+    } else if (event.price.comingSoon) {
+      return res.status(403).json({ error: "Tickets not available yet" });
+    }
+
+    if (ticketType === "presale") {
+      const presaleCount = await Attendee.countDocuments({
+        ticketType: "presale",
+        eventId,
+        paymentStatus: "success",
+      });
+      if (presaleCount >= 115) {
+        return res.status(403).json({
+          error: "Presale tickets are sold out. You can no longer register.",
+        });
+      }
+    }
 
     const existingTicket = await Attendee.findOne({
       email,
       eventId,
-      ticketType: "presale",
+      ticketType,
     });
     if (existingTicket) {
       return res.status(400).json({
-        error: "Email already registered for this event's presale ticket",
+        error: `Email already registered for this event's ${ticketType} ticket`,
       });
     }
 
     const ticketId = crypto.randomBytes(16).toString("hex");
+    const paymentReference = new Date().getTime().toString();
     const attendee = new Attendee({
       name,
       email,
       eventId,
       ticketId,
       ticketType,
-      paymentStatus: "success",
+      paymentStatus: ticketType === "presale" ? "success" : "pending",
+      paymentReference,
       paymentDate: new Date(),
     });
     await attendee.save();
 
-    const qrCodeData = await QRCode.toDataURL(ticketId, {
-      errorCorrectionLevel: "H",
-      width: 200,
-    });
+    if (ticketType === "presale") {
+      const qrCodeData = await QRCode.toDataURL(ticketId, {
+        errorCorrectionLevel: "H",
+        width: 200,
+      });
 
-    await transporter.sendMail({
-      from: `"Outsydcvltr Events" <${process.env.GMAIL_USER}>`,
-      to: email,
-      subject: `Your Presale Ticket for ${event.name}`,
-      html: `
-        <h2>Dear ${name},</h2>
-        <p>Your presale ticket for <strong>${event.name}</strong> is confirmed.</p>
-        <p><strong>Ticket ID:</strong> ${ticketId}</p>
-        <p>Scan this QR code at the event:</p>
-        <img src="${qrCodeData}" alt="Ticket QR Code" style="width:200px;" />
-      `,
-    });
+      await transporter.sendMail({
+        from: `"Outsydcvltr Events" <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject: `Your ${ticketType} Ticket for ${event.name}`,
+        html: `
+          <h2>Dear ${name},</h2>
+          <p>Thanks for registering, this is your ${ticketType} ticket for <strong>${event.name}</strong>.</p>
+          <p><strong>Ticket ID:</strong> ${ticketId}</p>
+          <p><strong>Ticket Type:</strong> ${ticketType}</p>
+          <p><strong>Price:</strong> ₦0</p>
+          <p>Scan this QR code at the event:</p>
+          <img src="${qrCodeData}" alt="Ticket QR Code" style="width:200px;" />
+        `,
+      });
 
-    await transporter.sendMail({
-      from: `"Outsydcvltr Events" <${process.env.GMAIL_USER}>`,
-      to: "mik5633257@gmail.com",
-      subject: `New Presale Ticket for ${event.name}`,
-      html: `
-        <p><strong>Buyer:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Ticket ID:</strong> ${ticketId}</p>
-        <p><strong>Ticket Type:</strong> ${ticketType}</p>
-      `,
-    });
+      await transporter.sendMail({
+        from: `"Outsydcvltr Events" <${process.env.GMAIL_USER}>`,
+        to: "mik5633257@gmail.com",
+        subject: `New ${ticketType} Ticket for ${event.name}`,
+        html: `
+          <p><strong>Buyer:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Ticket ID:</strong> ${ticketId}</p>
+          <p><strong>Ticket Type:</strong> ${ticketType}</p>
+          <p><strong>Price:</strong> ₦0</p>
+        `,
+      });
 
-    res.json({
-      message: "Presale ticket registered",
-      qrCode: qrCodeData,
-      ticketId,
-    });
+      res.json({
+        message: "Presale ticket registered",
+        qrCode: qrCodeData,
+        ticketId,
+        ticketPrice: 0,
+      });
+    } else {
+      res.json({
+        message: `${ticketType} ticket registered, awaiting payment`,
+        ticketId,
+        ticketPrice,
+        paymentReference,
+      });
+    }
   } catch (err) {
     console.error("Presale registration error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Verify payment
+app.post("/api/presale/verify", async (req, res) => {
+  const { reference, eventId, email, ticketType } = req.body;
+  if (!reference || !eventId || !email || !ticketType) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const response = await axios.get(
+      `https://api.paystack.co/transaction/verify/${reference}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        },
+      }
+    );
+
+    const paymentData = response.data;
+    if (paymentData.status && paymentData.data.status === "success") {
+      const attendee = await Attendee.findOne({
+        email,
+        eventId,
+        ticketType,
+        paymentReference: reference,
+        paymentStatus: "pending",
+      });
+      if (!attendee) {
+        return res
+          .status(404)
+          .json({ error: "Ticket not found or already verified" });
+      }
+
+      attendee.paymentStatus = "success";
+      await attendee.save();
+
+      const event = await Event.findOne({ id: eventId });
+      if (!event) return res.status(404).json({ error: "Event not found" });
+
+      const qrCodeData = await QRCode.toDataURL(attendee.ticketId, {
+        errorCorrectionLevel: "H",
+        width: 200,
+      });
+
+      await transporter.sendMail({
+        from: `"Outsydcvltr Events" <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject: `Your ${ticketType} Ticket for ${event.name}`,
+        html: `
+          <h2>Dear ${attendee.name},</h2>
+          <p>Thanks for your payment! This is your ${ticketType} ticket for <strong>${
+          event.name
+        }</strong>.</p>
+          <p><strong>Ticket ID:</strong> ${attendee.ticketId}</p>
+          <p><strong>Ticket Type:</strong> ${ticketType}</p>
+          <p><strong>Price:</strong> ₦${paymentData.data.amount / 100}</p>
+          <p>Scan this QR code at the event:</p>
+          <img src="${qrCodeData}" alt="Ticket QR Code" style="width:200px;" />
+        `,
+      });
+
+      await transporter.sendMail({
+        from: `"Outsydcvltr Events" <${process.env.GMAIL_USER}>`,
+        to: "mik5633257@gmail.com",
+        subject: `New ${ticketType} Ticket for ${event.name}`,
+        html: `
+          <p><strong>Buyer:</strong> ${attendee.name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Ticket ID:</strong> ${attendee.ticketId}</p>
+          <p><strong>Ticket Type:</strong> ${ticketType}</p>
+          <p><strong>Price:</strong> ₦${paymentData.data.amount / 100}</p>
+        `,
+      });
+
+      res.json({
+        message: "Payment verified, ticket issued",
+        qrCode: qrCodeData,
+        ticketId: attendee.ticketId,
+        ticketPrice: paymentData.data.amount / 100,
+      });
+    } else {
+      return res.status(400).json({ error: "Payment verification failed" });
+    }
+  } catch (err) {
+    console.error("Payment verification error:", err.message);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -244,6 +393,12 @@ app.get("/api/tickets/scan/:ticketId", async (req, res) => {
     });
     if (!attendee)
       return res.status(404).json({ error: "Ticket not found or unpaid" });
+
+    if (attendee.used)
+      return res.status(400).json({ error: "Ticket already used" });
+
+    attendee.used = true;
+    await attendee.save();
 
     const event = await Event.findOne({ id: attendee.eventId });
 
@@ -280,7 +435,7 @@ app.get("/api/tickets/search/:last4", async (req, res) => {
     const matches = await Attendee.find({
       ticketId: { $regex: `${last4}$`, $options: "i" },
       paymentStatus: "success",
-    }).select("name email ticketId ticketType");
+    }).select("name email ticketId ticketType used");
 
     res.json(matches);
   } catch (err) {
@@ -288,21 +443,40 @@ app.get("/api/tickets/search/:last4", async (req, res) => {
   }
 });
 
-// Events
+// Events with pagination
 app.get("/api/events", async (req, res) => {
   try {
-    const events = await Event.find();
-    res.json(events);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const events = await Event.find().skip(skip).limit(limit);
+    const total = await Event.countDocuments();
+
+    console.log("Fetched events:", events);
+    res.json({
+      events,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (err) {
+    console.error("Failed to fetch events:", err.message);
     res.status(500).json({ error: "Failed to fetch events" });
   }
 });
+
 app.get("/api/events/:id", async (req, res) => {
   try {
     const event = await Event.findOne({ id: req.params.id });
     if (!event) return res.status(404).json({ error: "Event not found" });
+    console.log("Fetched event by ID:", event);
     res.json(event);
   } catch (err) {
+    console.error("Failed to fetch event:", err.message);
     res.status(500).json({ error: "Failed to fetch event" });
   }
 });
@@ -319,7 +493,11 @@ app.post("/api/events/seed", async (req, res) => {
         time: "7:00 PM",
         location: "Victor Uwaifo Creative Hub, Benin City, Airport Road",
         image: "/img/IMG_9588.JPG",
-        price: 0,
+        price: {
+          generalAdmission: 3000,
+          gengOf6: 25000,
+          comingSoon: false,
+        },
       },
       {
         id: "2",
@@ -328,21 +506,16 @@ app.post("/api/events/seed", async (req, res) => {
         time: "8:00 PM",
         location: "Victor Uwaifo Creative Hub, Benin City, Airport Road",
         image: "/img/IMG_9589.JPG",
-        price: 0,
-      },
-      {
-        id: "3",
-        name: "Galactic Jazz Session",
-        date: "Coming Soon",
-        time: "6:30 PM",
-        location: "Coming Soon",
-        image: "/img/IMG_9590.JPG",
-        price: 0,
+        price: {
+          comingSoon: true,
+        },
       },
     ];
     await Event.insertMany(sampleEvents);
+    console.log("Seeded events:", sampleEvents);
     res.json({ message: "Events seeded successfully" });
   } catch (err) {
+    console.error("Seeding failed:", err.message);
     res.status(500).json({ error: "Seeding failed" });
   }
 });
